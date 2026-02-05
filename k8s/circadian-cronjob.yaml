@@ -18,7 +18,7 @@ spec:
               command: ["python", "/scripts/circadian.py"]
               env:
                 - name: HA_URL
-                  value: "https://homeassistant.home"
+                  value: "http://homeassistant.homeassistant.svc.cluster.local:8123"
                 - name: HA_TOKEN
                   valueFrom:
                     secretKeyRef:
