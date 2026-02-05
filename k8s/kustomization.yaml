@@ -9,3 +9,6 @@ resources:
   - deployment.yaml
   - service.yaml
   - ingress.yaml
+  - circadian-sealedsecret.yaml
+  - circadian-configmap.yaml
+  - circadian-cronjob.yaml

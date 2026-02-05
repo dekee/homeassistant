@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: circadian-lighting
+  namespace: homeassistant
+spec:
+  schedule: "*/5 * * * *"  # Every 5 minutes
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: circadian
+              image: python:3.11-slim
+              command: ["python", "/scripts/circadian.py"]
+              env:
+                - name: HA_URL
+                  value: "https://homeassistant.home"
+                - name: HA_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: homeassistant-token
+                      key: HA_TOKEN
+                - name: TZ
+                  value: "America/Los_Angeles"
+              volumeMounts:
+                - name: script
+                  mountPath: /scripts
+          volumes:
+            - name: script
+              configMap:
+                name: circadian-script
+          restartPolicy: OnFailure

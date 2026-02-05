@@ -1,0 +1,123 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: circadian-script
+  namespace: homeassistant
+data:
+  circadian.py: |
+    #!/usr/bin/env python3
+    """
+    Circadian Lighting - Gradually transition lights from cool to warm throughout the day.
+    """
+    import os
+    import sys
+    import json
+    import math
+    import urllib.request
+    import urllib.error
+    import ssl
+    from datetime import datetime
+
+    # Configuration
+    HA_URL = os.environ.get("HA_URL", "https://homeassistant.home")
+    HA_TOKEN = os.environ.get("HA_TOKEN", "")
+
+    # Circadian settings
+    WAKE_TIME = 6      # 6 AM
+    PEAK_COOL = 12     # 12 PM
+    SUNSET_START = 17  # 5 PM
+    SLEEP_TIME = 22    # 10 PM
+
+    # Color temperature range (Kelvin)
+    COOL_TEMP = 6500
+    WARM_TEMP = 2000
+
+    # SSL context for self-signed certs
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+
+
+    def api_request(method: str, endpoint: str, data: dict = None) -> dict:
+        url = f"{HA_URL}/api/{endpoint}"
+        headers = {
+            "Authorization": f"Bearer {HA_TOKEN}",
+            "Content-Type": "application/json",
+        }
+        body = json.dumps(data).encode() if data else None
+        req = urllib.request.Request(url, data=body, headers=headers, method=method)
+        try:
+            with urllib.request.urlopen(req, context=ssl_context, timeout=30) as response:
+                return json.loads(response.read().decode())
+        except urllib.error.HTTPError as e:
+            print(f"Error: {e.code} - {e.reason}")
+            return {}
+        except Exception as e:
+            print(f"Error: {e}")
+            return {}
+
+
+    def calculate_color_temp(hour: float) -> int:
+        if hour < WAKE_TIME:
+            return WARM_TEMP
+        elif hour < PEAK_COOL:
+            progress = (hour - WAKE_TIME) / (PEAK_COOL - WAKE_TIME)
+            progress = math.sin(progress * math.pi / 2)
+            return int(WARM_TEMP + (COOL_TEMP - WARM_TEMP) * progress)
+        elif hour < SUNSET_START:
+            return COOL_TEMP
+        elif hour < SLEEP_TIME:
+            progress = (hour - SUNSET_START) / (SLEEP_TIME - SUNSET_START)
+            progress = math.sin(progress * math.pi / 2)
+            return int(COOL_TEMP - (COOL_TEMP - WARM_TEMP) * progress)
+        else:
+            return WARM_TEMP
+
+
+    def get_color_temp_lights() -> list:
+        states = api_request("GET", "states")
+        if not states:
+            return []
+        lights = []
+        for state in states:
+            entity_id = state.get("entity_id", "")
+            if not entity_id.startswith("light."):
+                continue
+            attrs = state.get("attributes", {})
+            supported_modes = attrs.get("supported_color_modes", [])
+            if "color_temp" in supported_modes:
+                if not attrs.get("is_hue_group", False):
+                    lights.append(entity_id)
+        return lights
+
+
+    def set_color_temperature(kelvin: int, lights: list = None):
+        if lights is None:
+            lights = get_color_temp_lights()
+        if not lights:
+            print("No color temperature compatible lights found")
+            return 0
+        mireds = int(1000000 / kelvin)
+        mireds = max(153, min(500, mireds))
+        api_request("POST", "services/light/turn_on", {
+            "entity_id": lights,
+            "color_temp": mireds
+        })
+        return len(lights)
+
+
+    def main():
+        if not HA_TOKEN:
+            print("Error: HA_TOKEN environment variable not set")
+            sys.exit(1)
+
+        now = datetime.now()
+        hour = now.hour + now.minute / 60
+        color_temp = calculate_color_temp(hour)
+        lights = get_color_temp_lights()
+        count = set_color_temperature(color_temp, lights)
+        print(f"[{now.strftime('%H:%M')}] Set {count} lights to {color_temp}K")
+
+
+    if __name__ == "__main__":
+        main()
