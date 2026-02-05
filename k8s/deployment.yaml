@@ -7,6 +7,8 @@ metadata:
     app: homeassistant
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: homeassistant
@@ -25,7 +27,7 @@ spec:
               name: http
           env:
             - name: TZ
-              value: "America/Chicago"
+              value: "America/Los_Angeles"
           volumeMounts:
             - name: config
               mountPath: /config
