@@ -16,4 +16,5 @@ resources:
   - music-assistant-deployment.yaml
   - music-assistant-service.yaml
   - music-assistant-ingress.yaml
+  - airconnect-config.yaml
   - airconnect-deployment.yaml
