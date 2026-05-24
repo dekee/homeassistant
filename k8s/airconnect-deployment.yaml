@@ -28,7 +28,7 @@ spec:
             - name: TZ
               value: "America/Los_Angeles"
             - name: AIRCAST_VAR
-              value: "--cast-config /config/aircast.xml"
+              value: "-x /config/aircast.xml"
           volumeMounts:
             - name: config
               mountPath: /config
