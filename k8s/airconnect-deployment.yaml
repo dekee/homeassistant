@@ -29,6 +29,8 @@ spec:
               value: "America/Los_Angeles"
             - name: AIRCAST_VAR
               value: "-x /config/aircast.xml"
+            - name: AIRUPNP_VAR
+              value: "-x /config/airupnp.xml"
           volumeMounts:
             - name: config
               mountPath: /config
