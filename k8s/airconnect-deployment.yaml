@@ -27,13 +27,6 @@ spec:
           env:
             - name: TZ
               value: "America/Los_Angeles"
-            - name: AIRCAST_VAR
-              value: "-x /config/aircast.xml"
-            - name: AIRUPNP_VAR
-              value: "-x /config/airupnp.xml"
-          volumeMounts:
-            - name: config
-              mountPath: /config
           resources:
             requests:
               cpu: 50m
@@ -41,7 +34,3 @@ spec:
             limits:
               cpu: 500m
               memory: 256Mi
-      volumes:
-        - name: config
-          configMap:
-            name: airconnect-config
