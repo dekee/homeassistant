@@ -12,3 +12,7 @@ resources:
   - circadian-sealedsecret.yaml
   - circadian-configmap.yaml
   - circadian-cronjob.yaml
+  - music-assistant-pvc.yaml
+  - music-assistant-deployment.yaml
+  - music-assistant-service.yaml
+  - music-assistant-ingress.yaml
